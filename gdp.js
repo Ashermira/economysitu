@@ -78,7 +78,7 @@ linePath
     const index = bisect(data, xValue);
     const selectedData = data[index];
 
-    tooltip.html(`Year: ${selectedData.year}<br>GDP: ${selectedData.gdp}`)
+    tooltip.html(`年份: ${selectedData.year}<br>GDP: ${selectedData.gdp}`)
       .style("left", (event.pageX + 10) + "px")
       .style("top", (event.pageY - 30) + "px");
   })

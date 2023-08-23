@@ -1,59 +1,101 @@
-// Load the CSV data and draw the chart
+const svgWidth = 800; // Adjust the width as needed
+const svgHeight = 600; // Adjust the height as needed
+const margin = { top: 50, right: 50, bottom: 50, left: 50 };
+const width = svgWidth - margin.left - margin.right;
+const height = svgHeight - margin.top - margin.bottom;
+
+const svg = d3
+  .select("#chart")
+  .attr("width", svgWidth)
+  .attr("height", svgHeight);
+
+const g = svg
+  .append("g")
+  .attr("transform", `translate(${margin.left},${margin.top})`);
+
 d3.csv("price_index.csv").then(data => {
-    // Parse data and calculate inflation rate
-    data.forEach(d => {
-        d.year = parseInt(d.year);
-        d.cpi = parseFloat(d.cpi);
-        d.inflationRate = d.cpi - 100;
-    });
+  data.forEach((d) => {
+    d.year = +d.year;
+    d.inflation_race = +(d.cpi-100);
+  });
 
-    // Set up the dimensions of the chart
-    const margin = { top: 20, right: 30, bottom: 30, left: 40 };
-    const width = 800 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+  // Create scales
+  const xScale = d3
+    .scaleLinear()
+    .domain(d3.extent(data, (d) => d.year))
+    .range([0, width]);
 
-    // Create an SVG element
-    const svg = d3.select("#chart")
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+  const yScale = d3
+    .scaleLinear()
+    .domain([-2, d3.max(data, (d) => d.inflation_race) * 1.1]) // Adding some padding to the top
+    .range([height, 0]);
 
-    // Create scales for x and y axes
-    const xScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.year))
-        .range([0, width]);
+  // Create line generator
+  const line = d3
+    .line()
+    .x((d) => xScale(d.year))
+    .y((d) => yScale(d.inflation_race));
 
-    const yScale = d3.scaleLinear()
-        .domain(d3.extent(data, d => d.inflationRate))
-        .range([height, 0]);
+  // Add X and Y axes
+  g.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(xScale).tickFormat(d3.format("d"))); // Format as integers
 
-    // Create x and y axes
-    svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(xScale));
+  g.append("g").call(d3.axisLeft(yScale));
 
-    svg.append("g")
-        .call(d3.axisLeft(yScale));
+  // Add the line
+  g.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-width", 2)
+    .attr("d", line);
 
-    // Create the line
-    const line = d3.line()
-        .x(d => xScale(d.year))
-        .y(d => yScale(d.inflationRate));
+// Add the line path
+const linePath = g.append("path")
+  .datum(data) // Associate data with the line element
+  .attr("fill", "none")
+  .attr("stroke", "steelblue")
+  .attr("stroke-width", 2)
+  .attr("d", line);
 
-    // Draw the line
-    svg.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 2)
-        .attr("d", line);
+// Create a tooltip
+const tooltip = d3.select("body")
+  .append("div")
+  .attr("class", "tooltip")
+  .style("opacity", 0);
 
-const text = svg.append("text")
-  .attr("x", svgWidth / 2)
-  .attr("y", svgHeight - 10) // Adjust the y-coordinate as needed
-  .attr("text-anchor", "middle")
-  .attr("class", "chart-text")
-  .text("通货膨胀率=（当年CPI - 基期CPI） / 基期CPI");
+// Add event listeners for hover
+linePath
+  .on("mouseover", function(event, d) {
+    tooltip.transition()
+      .duration(200)
+      .style("opacity", 0.9);
+
+    const [x, y] = d3.pointer(event);
+    const xValue = xScale.invert(x); // Convert screen x-coordinate to data value
+    const bisect = d3.bisector(d => d.year).left;
+    const index = bisect(data, xValue);
+    const selectedData = data[index];
+
+    tooltip.html(`年份: ${selectedData.year}<br>通货膨胀率: ${selectedData.inflation_race.toFixed(2)}`)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY - 30) + "px");
+  })
+  .on("mouseout", function() {
+    tooltip.transition()
+      .duration(200)
+      .style("opacity", 0);
+  });
+
+g.append("g")
+  .attr("class", "grid")
+  .attr("transform", `translate(0,${height})`)
+  .call(d3.axisBottom(xScale).tickFormat("").tickSize(-height));
+
+// Add Y grid lines
+g.append("g")
+  .attr("class", "grid")
+  .call(d3.axisLeft(yScale).tickFormat("").tickSize(-width));
+
 });
