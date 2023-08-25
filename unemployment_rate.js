@@ -1,5 +1,5 @@
-const svgWidth = 800; // Adjust the width as needed
-const svgHeight = 600; // Adjust the height as needed
+const svgWidth = 800;
+const svgHeight = 600;
 const margin = { top: 50, right: 50, bottom: 50, left: 50 };
 const width = svgWidth - margin.left - margin.right;
 const height = svgHeight - margin.top - margin.bottom;
@@ -82,7 +82,7 @@ d3.csv("summary.csv").then((data) => {
         .html(
           `年份: ${
             selectedData.year
-          }<br>失业率: ${selectedData.unemployment_rate.toFixed(2)}`
+          }<br>失业率: ${selectedData.unemployment_rate.toFixed(2)}%`
         )
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 30 + "px");
@@ -100,4 +100,12 @@ d3.csv("summary.csv").then((data) => {
   g.append("g")
     .attr("class", "grid")
     .call(d3.axisLeft(yScale).tickFormat("").tickSize(-width));
+
+  const text = svg
+    .append("text")
+    .attr("x", svgWidth / 2)
+    .attr("y", svgHeight - 10) // Adjust the y-coordinate as needed
+    .attr("text-anchor", "middle")
+    .attr("class", "chart-text")
+    .text("y轴为失业率，单位为百分比");
 });
